@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vape Store</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --primary: #8a2be2;
+            --secondary: #4b0082;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #28a745;
+            --danger: #dc3545;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .cart-btn {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .cart-count {
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin: 20px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid var(--primary);
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .product-info {
+            padding: 15px;
+        }
+        
+        .product-title {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .product-price {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .product-discount {
+            text-decoration: line-through;
+            color: #777;
+            font-size: 14px;
+            margin-right: 5px;
+        }
+        
+        .add-to-cart {
+            width: 100%;
+            padding: 8px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .add-to-cart:hover {
+            background: var(--secondary);
+        }
+        
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #777;
+        }
+        
+        /* Формы */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input, 
+        .form-group textarea, 
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Админ-панель */
+        .admin-panel {
+            display: none;
+        }
+        
+        .orders-list {
+            margin-top: 20px;
+        }
+        
+        .order-item {
+            background: white;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo">Vape Store</div>
+            <button class="cart-btn" id="cartBtn">
+                Корзина <span class="cart-count" id="cartCount">0</span>
+            </button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="products">Товары</div>
+            <div class="tab" data-tab="admin" id="adminTab">Админ-панель</div>
+        </div>
+        
+        <!-- Основной контент -->
+        <div id="productsTab" class="tab-content">
+            <div class="products-grid" id="productsGrid">
+                <!-- Товары будут загружены через JS -->
+            </div>
+        </div>
+        
+        <!-- Админ-панель -->
+        <div id="adminTabContent" class="tab-content admin-panel">
+            <h2>Админ-панель</h2>
+            
+            <div class="tabs">
+                <div class="tab active" data-admin-tab="orders">Заказы</div>
+                <div class="tab" data-admin-tab="add-product">Добавить товар</div>
+            </div>
+            
+            <div id="adminOrders" class="admin-tab-content">
+                <h3>Последние заказы</h3>
+                <div class="orders-list" id="ordersList">
+                    <!-- Заказы будут загружены через JS -->
+                </div>
+            </div>
+            
+            <div id="adminAddProduct" class="admin-tab-content" style="display: none;">
+                <h3>Добавить новый товар</h3>
+                <form id="addProductForm">
+                    <div class="form-group">
+                        <label for="productName">Название товара</label>
+                        <input type="text" id="productName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="productDesc">Описание</label>
+                        <textarea id="productDesc" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="productPrice">Цена (₽)</label>
+                        <input type="number" id="productPrice" min="0" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="productDiscount">Скидка (%)</label>
+                        <input type="number" id="productDiscount" min="0" max="100" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="productImage">URL изображения</label>
+                        <input type="text" id="productImage" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Добавить товар</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно корзины -->
+    <div class="modal" id="cartModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Ваша корзина</h2>
+            <div id="cartItems">
+                <!-- Товары в корзине -->
+            </div>
+            <div id="cartTotal" style="font-weight: bold; margin: 15px 0;"></div>
+            <button id="checkoutBtn" class="btn btn-primary">Оформить заказ</button>
+        </div>
+    </div>
+    
+    <!-- Модальное окно оформления заказа -->
+    <div class="modal" id="checkoutModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Оформление заказа</h2>
+            <form id="checkoutForm">
+                <div class="form-group">
+                    <label for="userName">Ваше имя</label>
+                    <input type="text" id="userName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userPhone">Телефон</label>
+                    <input type="tel" id="userPhone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userAddress">Адрес доставки</label>
+                    <textarea id="userAddress" required></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Подтвердить заказ</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // База данных (используем localStorage)
+        const DB = {
+            products: JSON.parse(localStorage.getItem('vapeProducts')) || [
+                {
+                    id: '1',
+                    name: 'POD-система Vaporesso XROS 3',
+                    description: 'Компактная POD-система с регулируемой тягой и Type-C зарядкой',
+                    price: 2990,
+                    discount: 10,
+                    image: 'https://example.com/xros3.jpg'
+                }
+            ],
+            
+            orders: JSON.parse(localStorage.getItem('vapeOrders')) || [],
+            
+            admins: JSON.parse(localStorage.getItem('vapeAdmins')) || [
+                { tgId: '1442308108' } // Замените на ваш Telegram ID
+            ],
+            
+            saveProducts: function() {
+                localStorage.setItem('vapeProducts', JSON.stringify(this.products));
+            },
+            
+            saveOrders: function() {
+                localStorage.setItem('vapeOrders', JSON.stringify(this.orders));
+            },
+            
+            isAdmin: function(tgId) {
+                return this.admins.some(admin => admin.tgId === String(tgId));
+            }
+        };
+        
+        // Состояние приложения
+        const state = {
+            cart: JSON.parse(localStorage.getItem('vapeCart')) || {},
+            currentTab: 'products',
+            currentAdminTab: 'orders'
+        };
+        
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверяем, является ли пользователь админом через Telegram WebApp
+            if (typeof Telegram !== 'undefined' && Telegram.WebApp.initDataUnsafe.user) {
+                const tgUser = Telegram.WebApp.initDataUnsafe.user;
+                if (DB.isAdmin(tgUser.id)) {
+                    document.getElementById('adminTab').style.display = 'block';
+                }
+            }
+            
+            renderProducts();
+            updateCartCount();
+            setupEventListeners();
+        });
+        
+        // Рендер списка товаров
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = '';
+            
+            DB.products.forEach(product => {
+                const discountedPrice = product.price * (100 - (product.discount || 0)) / 100;
+                
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-title">${product.name}</h3>
+                        <div class="product-price">
+                            ${product.discount ? `
+                                <span class="product-discount">${product.price}₽</span>
+                                ${discountedPrice.toFixed(2)}₽ (${product.discount}% off)
+                            ` : `${product.price}₽`}
+                        </div>
+                        <p>${product.description}</p>
+                        <button class="add-to-cart" data-id="${product.id}">В корзину</button>
+                    </div>
+                `;
+                
+                grid.appendChild(productCard);
+            });
+        }
+        
+        // Обновление счетчика корзины
+        function updateCartCount() {
+            const count = Object.values(state.cart).reduce((sum, qty) => sum + qty, 0);
+            document.getElementById('cartCount').textContent = count;
+            localStorage.setItem('vapeCart', JSON.stringify(state.cart));
+        }
+        
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            // Переключение вкладок
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    if (this.dataset.tab) {
+                        // Основные вкладки
+                        state.currentTab = this.dataset.tab;
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        document.querySelectorAll('.tab-content').forEach(content => {
+                            content.style.display = 'none';
+                        });
+                        
+                        document.getElementById(`${state.currentTab}Tab`).style.display = 'block';
+                    } else if (this.dataset.adminTab) {
+                        // Вкладки админ-панели
+                        state.currentAdminTab = this.dataset.adminTab;
+                        document.querySelectorAll('[data-admin-tab]').forEach(t => t.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        document.querySelectorAll('.admin-tab-content').forEach(content => {
+                            content.style.display = 'none';
+                        });
+                        
+                        document.getElementById(`admin${state.currentAdminTab.charAt(0).toUpperCase() + state.currentAdminTab.slice(1)}`).style.display = 'block';
+                    }
+                });
+            });
+            
+            // Добавление в корзину
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('add-to-cart')) {
+                    const productId = e.target.dataset.id;
+                    state.cart[productId] = (state.cart[productId] || 0) + 1;
+                    updateCartCount();
+                    alert('Товар добавлен в корзину!');
+                }
+            });
+            
+            // Открытие корзины
+            document.getElementById('cartBtn').addEventListener('click', function() {
+                renderCart();
+                document.getElementById('cartModal').style.display = 'flex';
+            });
+            
+            // Закрытие модальных окон
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            });
+            
+            // Оформление заказа
+            document.getElementById('checkoutBtn').addEventListener('click', function() {
+                document.getElementById('cartModal').style.display = 'none';
+                document.getElementById('checkoutModal').style.display = 'flex';
+            });
+            
+            // Форма оформления заказа
+            document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const order = {
+                    id: Date.now(),
+                    date: new Date().toLocaleString(),
+                    userName: document.getElementById('userName').value,
+                    userPhone: document.getElementById('userPhone').value,
+                    userAddress: document.getElementById('userAddress').value,
+                    items: Object.entries(state.cart).map(([id, qty]) => {
+                        const product = DB.products.find(p => p.id === id);
+                        return {
+                            productId: id,
+                            name: product.name,
+                            price: product.price,
+                            discount: product.discount || 0,
+                            quantity: qty
+                        };
+                    }),
+                    status: 'new'
+                };
+                
+                DB.orders.push(order);
+                DB.saveOrders();
+                
+                // Очищаем корзину
+                state.cart = {};
+                updateCartCount();
+                
+                alert('Заказ успешно оформлен! Спасибо за покупку!');
+                document.getElementById('checkoutModal').style.display = 'none';
+                this.reset();
+                
+                // Обновляем список заказов в админке
+                if (state.currentTab === 'admin') {
+                    renderOrders();
+                }
+            });
+            
+            // Форма добавления товара
+            document.getElementById('addProductForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const newProduct = {
+                    id: Date.now().toString(),
+                    name: document.getElementById('productName').value,
+                    description: document.getElementById('productDesc').value,
+                    price: parseFloat(document.getElementById('productPrice').value),
+                    discount: parseInt(document.getElementById('productDiscount').value) || 0,
+                    image: document.getElementById('productImage').value
+                };
+                
+                DB.products.push(newProduct);
+                DB.saveProducts();
+                
+                alert('Товар успешно добавлен!');
+                this.reset();
+                renderProducts();
+            });
+        }
+        
+        // Рендер корзины
+        function renderCart() {
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            
+            cartItems.innerHTML = '';
+            
+            let total = 0;
+            
+            Object.entries(state.cart).forEach(([id, qty]) => {
+                const product = DB.products.find(p => p.id === id);
+                if (product) {
+                    const price = product.price * (100 - (product.discount || 0)) / 100;
+                    const itemTotal = price * qty;
+                    total += itemTotal;
+                    
+                    const item = document.createElement('div');
+                    item.className = 'cart-item';
+                    item.innerHTML = `
+                        <h4>${product.name}</h4>
+                        <p>${qty} × ${price.toFixed(2)}₽ = ${itemTotal.toFixed(2)}₽</p>
+                        <button class="btn btn-danger" data-id="${id}">Удалить</button>
+                    `;
+                    
+                    cartItems.appendChild(item);
+                }
+            });
+            
+            cartTotal.textContent = `Итого: ${total.toFixed(2)}₽`;
+            
+            // Обработчики для кнопок удаления
+            document.querySelectorAll('.cart-item button').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    delete state.cart[this.dataset.id];
+                    updateCartCount();
+                    renderCart();
+                });
+            });
+        }
+        
+        // Рендер списка заказов (для админа)
+        function renderOrders() {
+            const ordersList = document.getElementById('ordersList');
+            ordersList.innerHTML = '';
+            
+            DB.orders.forEach(order => {
+                const orderItem = document.createElement('div');
+                orderItem.className = 'order-item';
+                
+                let itemsHtml = '';
+                let orderTotal = 0;
+                
+                order.items.forEach(item => {
+                    const itemPrice = item.price * (100 - item.discount) / 100;
+                    const itemTotal = itemPrice * item.quantity;
+                    orderTotal += itemTotal;
+                    
+                    itemsHtml += `
+                        <div style="margin-bottom: 5px;">
+                            ${item.name} - ${item.quantity} × ${itemPrice.toFixed(2)}₽ = ${itemTotal.toFixed(2)}₽
+                        </div>
+                    `;
+                });
+                
+                orderItem.innerHTML = `
+                    <h4>Заказ #${order.id}</h4>
+                    <p><strong>Клиент:</strong> ${order.userName}</p>
+                    <p><strong>Телефон:</strong> ${order.userPhone}</p>
+                    <p><strong>Адрес:</strong> ${order.userAddress}</p>
+                    <div style="margin: 10px 0;">
+                        <strong>Товары:</strong>
+                        ${itemsHtml}
+                    </div>
+                    <p><strong>Итого:</strong> ${orderTotal.toFixed(2)}₽</p>
+                    <p><strong>Статус:</strong> ${order.status}</p>
+                    <p><strong>Дата:</strong> ${order.date}</p>
+                `;
+                
+                ordersList.appendChild(orderItem);
+            });
+        }
+    </script>
+</body>
+</html>
